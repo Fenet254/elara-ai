@@ -1,0 +1,283 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Elara — Fenet's AI Digital Twin</title>
+<style>
+  :root {
+    --bg-pink: #FBDCE8;
+    --sidebar-pink: #F5B8D0;
+    --accent: #D6336C;
+    --accent-dark: #A61E4D;
+    --text-dark: #3B1F2B;
+    --bubble-user: #FFFFFF;
+    --bubble-ai: #FFEFF5;
+    --border: #EBA9C4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body {
+    display: flex;
+    height: 100vh;
+    background: var(--bg-pink);
+    color: var(--text-dark);
+    overflow: hidden;
+  }
+  /* Background illustration layer */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.10;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml;utf8,\
+    <svg xmlns='http://www.w3.org/2000/svg' width='800' height='800'>\
+      <text x='40' y='80' font-size='40' fill='%23A61E4D'>&lt;/&gt;</text>\
+      <text x='600' y='140' font-size='50' fill='%23A61E4D'>{ }</text>\
+      <text x='120' y='400' font-size='36' fill='%23A61E4D'>01</text>\
+      <text x='500' y='600' font-size='44' fill='%23A61E4D'>&lt;/&gt;</text>\
+      <rect x='300' y='300' width='120' height='80' rx='8' fill='none' stroke='%23A61E4D' stroke-width='4'/>\
+      <circle cx='680' cy='450' r='6' fill='%23A61E4D'/>\
+      <circle cx='700' cy='470' r='6' fill='%23A61E4D'/>\
+      <circle cx='720' cy='450' r='6' fill='%23A61E4D'/>\
+      <path d='M100 600 Q150 550 200 600 T300 600' stroke='%23A61E4D' fill='none' stroke-width='3'/>\
+    </svg>");
+    background-repeat: repeat;
+    background-size: 500px 500px;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    background: var(--sidebar-pink);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 14px;
+    z-index: 1;
+    border-right: 1px solid var(--border);
+  }
+  .sidebar h1 {
+    font-size: 20px;
+    color: var(--accent-dark);
+    margin-bottom: 24px;
+    font-weight: 700;
+  }
+  .new-chat-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    margin-bottom: 20px;
+    transition: background 0.2s;
+  }
+  .new-chat-btn:hover { background: var(--accent-dark); }
+  .chat-history { flex: 1; overflow-y: auto; }
+  .chat-item {
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text-dark);
+    cursor: pointer;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chat-item:hover { background: rgba(255,255,255,0.4); }
+
+  /* Main area */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    z-index: 1;
+  }
+  .topbar {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    color: var(--accent-dark);
+    background: rgba(255,255,255,0.4);
+    backdrop-filter: blur(4px);
+  }
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 30px 15%;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .msg {
+    max-width: 75%;
+    padding: 14px 18px;
+    border-radius: 16px;
+    line-height: 1.5;
+    font-size: 15px;
+    white-space: pre-wrap;
+  }
+  .msg.user {
+    align-self: flex-end;
+    background: var(--bubble-user);
+    border: 1px solid var(--border);
+    border-bottom-right-radius: 4px;
+  }
+  .msg.ai {
+    align-self: flex-start;
+    background: var(--bubble-ai);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .msg.ai .label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-dark);
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .input-area {
+    padding: 20px 15%;
+    background: rgba(255,255,255,0.4);
+    border-top: 1px solid var(--border);
+  }
+  .input-box {
+    display: flex;
+    align-items: center;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 10px 14px;
+  }
+  .input-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    background: transparent;
+    color: var(--text-dark);
+  }
+  .input-box button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.2s;
+  }
+  .input-box button:hover { background: var(--accent-dark); }
+
+  .mode-toggle {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    justify-content: center;
+  }
+  .mode-toggle button {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent-dark);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .mode-toggle button.active {
+    background: var(--accent);
+    color: white;
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h1>Elara</h1>
+  <button class="new-chat-btn">+ New Chat</button>
+  <div class="chat-history">
+    <div class="chat-item">Tell me about her AI journey</div>
+    <div class="chat-item">Weapon detection project</div>
+    <div class="chat-item">Generate a CV for AI Engineer role</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">Elara — Fenet Gizaw's AI Digital Twin</div>
+
+  <div class="messages" id="messages">
+    <div class="msg ai">
+      <span class="label">Elara</span>
+      Hi! I'm Elara, Fenet's AI digital twin. Ask me anything about her projects, AI journey, internships, or technical experience.
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-box">
+      <input id="userInput" type="text" placeholder="Ask Elara anything..." />
+      <button onclick="sendMessage()">&#8593;</button>
+    </div>
+    <div class="mode-toggle">
+      <button class="active" id="modeProfessional" onclick="setMode('professional')">Professional</button>
+      <button id="modeFun" onclick="setMode('fun')">Fun</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentMode = "professional";
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById("modeProfessional").classList.toggle("active", mode === "professional");
+  document.getElementById("modeFun").classList.toggle("active", mode === "fun");
+}
+
+function addMessage(text, sender) {
+  const messages = document.getElementById("messages");
+  const div = document.createElement("div");
+  div.className = "msg " + sender;
+  if (sender === "ai") {
+    div.innerHTML = "<span class=\"label\">Elara</span>" + text;
+  } else {
+    div.textContent = text;
+  }
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById("userInput");
+  const text = input.value.trim();
+  if (!text) return;
+  addMessage(text, "user");
+  input.value = "";
+
+  addMessage("Thinking...", "ai");
+  const messages = document.getElementById("messages");
+  const thinkingBubble = messages.lastChild;
+
+  try {
+    const res = await fetch("http://localhost:8000/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: text, mode: currentMode })
+    });
+    const data = await res.json();
+    thinkingBubble.innerHTML = "<span class=\"label\">Elara</span>" + data.response;
+  } catch (err) {
+    thinkingBubble.innerHTML = "<span class=\"label\">Elara</span>Backend not connected yet — this is a preview UI. (" + err + ")";
+  }
+}
+
+document.getElementById("userInput").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") sendMessage();
+});
+</script>
+
+</body>
+</html>
